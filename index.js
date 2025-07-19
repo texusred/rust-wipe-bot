@@ -8,6 +8,7 @@ const WipeScheduler = require('./src/services/scheduler');
 const PersistentEmbedManager = require('./src/services/persistentEmbed');
 const StateManager = require('./src/services/stateManager');
 const ApprovalManager = require('./src/services/approvalManager');
+const AdminEmbedManager = require("./src/services/adminEmbedManager");
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
@@ -32,6 +33,10 @@ client.once('ready', async () => {
 
     // Initialize persistent embed manager (now state-aware)
     client.persistentEmbed = new PersistentEmbedManager(client);
+
+    // Initialize admin embed manager
+    client.adminEmbed = new AdminEmbedManager(client);
+    await client.adminEmbed.initialize();
     await client.persistentEmbed.initialize();
 
     // Initialize scheduler

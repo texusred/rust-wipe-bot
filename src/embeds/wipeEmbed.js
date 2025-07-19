@@ -104,16 +104,20 @@ class WipeEmbedBuilder {
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('express_interest')
-                    .setLabel('Express Interest (Next Week)')
+                    .setCustomId("express_interest")
+                    .setLabel("Express Interest (Next Week)")
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
-                    .setCustomId('view_schedule')
-                    .setLabel('View Schedule')
+                    .setCustomId("not_interested_next")
+                    .setLabel("Skip Next Wipe")
                     .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
-                    .setCustomId('view_stats')
-                    .setLabel('View My Stats')
+                    .setCustomId("view_schedule")
+                    .setLabel("View Schedule")
+                    .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId("view_stats")
+                    .setLabel("View My Stats")
                     .setStyle(ButtonStyle.Secondary)
             );
 
@@ -155,16 +159,20 @@ class WipeEmbedBuilder {
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('express_interest')
-                    .setLabel('Express Interest (Next Week)')
+                    .setCustomId("express_interest")
+                    .setLabel("Express Interest (Next Week)")
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
-                    .setCustomId('view_stats')
-                    .setLabel('View My Stats')
+                    .setCustomId("not_interested_next")
+                    .setLabel("Skip Next Wipe")
                     .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
-                    .setCustomId('view_schedule')
-                    .setLabel('View Schedule')
+                    .setCustomId("view_stats")
+                    .setLabel("View My Stats")
+                    .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId("view_schedule")
+                    .setLabel("View Schedule")
                     .setStyle(ButtonStyle.Secondary)
             );
 
@@ -298,7 +306,7 @@ class WipeEmbedBuilder {
                              '⏳';
                 line += `${emoji} <@${player.discord_id}>`;
             } else {
-                line += `🔄 <@${player.discord_id}>`;
+                line += `💥 <@${player.discord_id}>`;
             }
 
             lines.push(line);

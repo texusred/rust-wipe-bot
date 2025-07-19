@@ -1,0 +1,180 @@
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const DatabaseQueries = require('../database/queries');
+
+class AdminEmbedManager {
+    constructor(client) {
+        this.client = client;
+        this.channelId = null;
+        this.messageId = null;
+        this.updateInterval = null;
+    }
+
+    async setAdminChannel(channelId) {
+        this.channelId = channelId;
+        await this.setConfig('ADMIN_CHANNEL_ID', channelId);
+        
+        await this.createOrUpdateEmbed();
+        this.startAutoUpdate();
+        
+        console.log(`✅ Admin status board set for channel: ${channelId}`);
+    }
+
+    async createOrUpdateEmbed() {
+        if (!this.channelId) return;
+
+        try {
+            const channel = await this.client.channels.fetch(this.channelId);
+            if (!channel) {
+                console.error('Admin channel not found');
+                return;
+            }
+
+            const embedData = await this.buildAdminEmbed();
+
+            if (this.messageId) {
+                try {
+                    const message = await channel.messages.fetch(this.messageId);
+                    await message.edit(embedData);
+                } catch (error) {
+                    console.log('Previous admin message not found, creating new embed');
+                    this.messageId = null;
+                    await this.createOrUpdateEmbed();
+                }
+            } else {
+                const message = await channel.send(embedData);
+                this.messageId = message.id;
+                await this.setConfig('ADMIN_MESSAGE_ID', message.id);
+                console.log(`📌 Created admin status embed: ${message.id}`);
+            }
+        } catch (error) {
+            console.error('Error updating admin embed:', error);
+        }
+    }
+
+    async buildAdminEmbed() {
+        const db = this.client.db;
+        const queries = new DatabaseQueries(db);
+        
+        // Get current scores
+        const players = await queries.getAllPlayers();
+        const scores = [];
+        
+        for (const player of players) {
+            const score = await queries.calculatePriorityScore(player.discord_id);
+            const hasInterest = await queries.hasExpressedInterest(player.discord_id);
+            scores.push({
+                username: player.username,
+                discord_id: player.discord_id,
+                score: score.totalScore,
+                hasInterest,
+                locked: player.locked,
+                skipNext: player.skip_next_wipe
+            });
+        }
+        
+        scores.sort((a, b) => b.score - a.score);
+        
+        // Build scores text
+        const scoresText = scores.map((s, i) => {
+            const locked = s.locked ? '🔒' : '';
+            const interest = s.hasInterest ? '⭐' : '';
+            const skip = s.skipNext ? '⏭️' : '';
+            return `${i + 1}. ${locked}${interest}${skip}**${s.username}** - ${s.score}pts`;
+        }).join('\n');
+        
+        // Get interested players
+        const interestedPlayers = scores.filter(s => s.hasInterest);
+        const interestText = interestedPlayers.length > 0 ? 
+            interestedPlayers.map(p => p.username).join(', ') : 'None';
+        
+        // Get skip next wipe players
+        const skipPlayers = scores.filter(s => s.skipNext);
+        const skipText = skipPlayers.length > 0 ? 
+            skipPlayers.map(p => p.username).join(', ') : 'None';
+
+        const embed = new EmbedBuilder()
+            .setTitle('⚙️ ADMIN STATUS BOARD')
+            .setDescription('Real-time player status and scores')
+            .addFields(
+                {
+                    name: '📊 Current Priority Scores',
+                    value: scoresText || 'No players',
+                    inline: false
+                },
+                {
+                    name: '⭐ Expressed Interest (Next Selection)',
+                    value: interestText,
+                    inline: true
+                },
+                {
+                    name: '⏭️ Skip Next Wipe',
+                    value: skipText,
+                    inline: true
+                },
+                {
+                    name: '📅 Last Updated',
+                    value: `<t:${Math.floor(Date.now() / 1000)}:R>`,
+                    inline: true
+                }
+            )
+            .setColor(0x9B59B6)
+            .setTimestamp();
+
+        return { embeds: [embed] };
+    }
+
+    startAutoUpdate() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+        }
+        
+        // Update every 60 seconds
+        this.updateInterval = setInterval(async () => {
+            await this.createOrUpdateEmbed();
+        }, 60000);
+    }
+
+    async setConfig(key, value) {
+        return new Promise((resolve, reject) => {
+            const stmt = this.client.db.prepare(`
+                INSERT OR REPLACE INTO bot_config (key, value, updated_at) 
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+            `);
+            
+            stmt.run(key, value, function(err) {
+                if (err) reject(err);
+                else resolve(this);
+            });
+        });
+    }
+
+    async getConfig(key) {
+        return new Promise((resolve, reject) => {
+            this.client.db.get('SELECT value FROM bot_config WHERE key = ?', [key], (err, row) => {
+                if (err) reject(err);
+                else resolve(row ? row.value : null);
+            });
+        });
+    }
+
+    async initialize() {
+        try {
+            this.channelId = await this.getConfig('ADMIN_CHANNEL_ID');
+            this.messageId = await this.getConfig('ADMIN_MESSAGE_ID');
+            
+            if (this.channelId) {
+                await this.createOrUpdateEmbed();
+                this.startAutoUpdate();
+                console.log('✅ Admin embed manager initialized');
+            }
+        } catch (error) {
+            console.error('Error initializing admin embed manager:', error);
+        }
+    }
+
+    async forceUpdate() {
+        await this.createOrUpdateEmbed();
+    }
+}
+
+module.exports = AdminEmbedManager;

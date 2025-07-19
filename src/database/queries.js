@@ -180,17 +180,15 @@ class DatabaseQueries {
     // SIMPLE WORKING PRIORITY SCORING - FIXED SQL
     async calculatePriorityScore(playerId) {
         return new Promise((resolve, reject) => {
-            this.db.get('SELECT * FROM players WHERE discord_id = ?', [playerId], (err, player) => {
+            this.db.get("SELECT * FROM players WHERE discord_id = ?", [playerId], (err, player) => {
                 if (err) {
                     reject(err);
                     return;
                 }
                 if (!player) {
-                    resolve({ totalScore: 0, breakdown: 'Player not found' });
+                    resolve({ totalScore: 0, breakdown: "Player not found" });
                     return;
                 }
-
-                // If locked, always priority 1
                 if (player.locked) {
                     resolve({
                         totalScore: 1000,
@@ -198,72 +196,64 @@ class DatabaseQueries {
                     });
                     return;
                 }
-
-                // Get when they last actually played (not no-show) - FIXED SQL
-                this.db.get(`
-                    SELECT julianday('now') - julianday(wc.start_date) as days_ago
-                    FROM player_history ph
-                    JOIN wipe_cycles wc ON ph.cycle_id = wc.cycle_id
-                    WHERE ph.player_id = ? AND ph.participated = 1
-                    ORDER BY wc.start_date DESC LIMIT 1
-                `, [playerId], (err, lastPlayed) => {
+                this.db.get("SELECT cycle_id FROM wipe_cycles WHERE status = 'active' ORDER BY cycle_id DESC LIMIT 1", (err, currentCycle) => {
                     if (err) {
                         reject(err);
                         return;
                     }
-
-                    // Calculate base score
-                    let baseScore;
-                    let weeksAgo;
-                    
-                    if (!lastPlayed) {
-                        // Never played
-                        baseScore = 50;
-                        weeksAgo = 99;
-                    } else {
-                        weeksAgo = Math.floor(lastPlayed.days_ago / 7);
-                        if (weeksAgo === 0) baseScore = 5;       // This week
-                        else if (weeksAgo === 1) baseScore = 20; // 1 week ago  
-                        else if (weeksAgo === 2) baseScore = 35; // 2 weeks ago
-                        else baseScore = 50;                     // 3+ weeks ago
-                    }
-
-                    // Check interest
-                    this.hasExpressedInterest(playerId).then(hasInterest => {
-                        const interestBonus = hasInterest ? 10 : 0;
-
-                        // Check no-show - FIXED SQL
-                        this.db.get(`
-                            SELECT COUNT(*) as count
-                            FROM player_history ph
-                            JOIN wipe_cycles wc ON ph.cycle_id = wc.cycle_id
-                            WHERE ph.player_id = ? AND ph.no_show = 1 
-                            AND julianday('now') - julianday(wc.start_date) <= 21
-                        `, [playerId], (err, noShowResult) => {
-                            if (err) {
-                                reject(err);
-                                return;
-                            }
-
-                            const hasNoShow = noShowResult && noShowResult.count > 0;
-                            const noShowPenalty = hasNoShow ? 20 : 0;
-
-                            const totalScore = Math.max(0, baseScore + interestBonus - noShowPenalty);
-
-                            resolve({
-                                totalScore,
-                                breakdown: {
-                                    baseScore,
-                                    interestBonus,
-                                    noShowPenalty,
-                                    weeksAgo,
-                                    hasInterest,
-                                    hasNoShow,
-                                    locked: false
+                    const currentCycleId = currentCycle ? currentCycle.cycle_id : 3;
+                    this.db.get(`
+                        SELECT cycle_id
+                        FROM player_history ph
+                        WHERE ph.player_id = ?
+                        ORDER BY ph.cycle_id DESC LIMIT 1
+                    `, [playerId], (err, lastPlayed) => {
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
+                        let baseScore;
+                        let weeksAgo;
+                        if (!lastPlayed) {
+                            baseScore = 50;
+                            weeksAgo = 99;
+                        } else {
+                            weeksAgo = currentCycleId - lastPlayed.cycle_id;
+                            if (weeksAgo === 0) baseScore = 5;
+                            else if (weeksAgo === 1) baseScore = 20;
+                            else if (weeksAgo === 2) baseScore = 35;
+                            else baseScore = 50;
+                        }
+                        this.hasExpressedInterest(playerId).then(hasInterest => {
+                            const interestBonus = hasInterest ? 10 : 0;
+                            this.db.get(`
+                                SELECT COUNT(*) as count
+                                FROM player_history ph
+                                WHERE ph.player_id = ? AND ph.no_show = 1 
+                                AND ph.cycle_id >= ?
+                            `, [playerId, Math.max(1, currentCycleId - 2)], (err, noShowResult) => {
+                                if (err) {
+                                    reject(err);
+                                    return;
                                 }
+                                const hasNoShow = noShowResult && noShowResult.count > 0;
+                                const noShowPenalty = hasNoShow ? 20 : 0;
+                                const totalScore = Math.max(0, baseScore + interestBonus - noShowPenalty);
+                                resolve({
+                                    totalScore,
+                                    breakdown: {
+                                        baseScore,
+                                        interestBonus,
+                                        noShowPenalty,
+                                        weeksAgo,
+                                        hasInterest,
+                                        hasNoShow,
+                                        locked: false
+                                    }
+                                });
                             });
-                        });
-                    }).catch(reject);
+                        }).catch(reject);
+                    });
                 });
             });
         });

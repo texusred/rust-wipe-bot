@@ -2,7 +2,6 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder
 const DatabaseQueries = require('../database/queries');
 const SelectionAlgorithm = require('../services/selectionAlgorithm');
 const WipeEmbedBuilder = require('../embeds/wipeEmbed');
-const ApprovalManager = require('../services/approvalManager');
 
 const ADMIN_ROLES = ['661441458804621332', '661441014535553044'];
 
@@ -20,20 +19,16 @@ module.exports = {
                         .setRequired(true)))
         .addSubcommand(subcommand =>
             subcommand
-                .setName('setapprovalchannel')
-                .setDescription('Set channel for selection approval requests')
+                .setName('setadminboard')
+                .setDescription('Set admin status board channel')
                 .addChannelOption(option =>
                     option.setName('channel')
-                        .setDescription('Channel for approval notifications')
+                        .setDescription('Channel for admin status board')
                         .setRequired(true)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('runselection')
-                .setDescription('Manually trigger selection process'))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('cancelselection')
-                .setDescription('Cancel pending selection and clear approval request'))
+                .setDescription('Manually run player selection'))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('viewscores')
@@ -45,14 +40,6 @@ module.exports = {
                 .addUserOption(option =>
                     option.setName('user')
                         .setDescription('User to add')
-                        .setRequired(true)))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('removeplayer')
-                .setDescription('Remove player from pool')
-                .addUserOption(option =>
-                    option.setName('user')
-                        .setDescription('Player to remove')
                         .setRequired(true)))
         .addSubcommand(subcommand =>
             subcommand
@@ -70,38 +57,10 @@ module.exports = {
             subcommand
                 .setName('unlockplayer')
                 .setDescription('Remove current locked player'))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('marknoshow')
-                .setDescription('Mark a player as no-show for last wipe')
-                .addUserOption(option =>
-                    option.setName('user')
-                        .setDescription('Player who did not show up')
-                        .setRequired(true)))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('setstate')
-                .setDescription('Manually set embed state for testing')
-                .addIntegerOption(option =>
-                    option.setName('state')
-                        .setDescription('State to set')
-                        .setRequired(true)
-                        .addChoices(
-                            { name: 'Wipe in Progress', value: 1 },
-                            { name: 'Pre-Selection', value: 2 },
-                            { name: 'Selection Results', value: 3 }
-                        )))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('viewstate')
-                .setDescription('View current state information'))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('resetstate')
-                .setDescription('Reset state to automatic calculation'))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
+        // Check admin roles
         const hasAdminRole = interaction.member.roles.cache.some(role => ADMIN_ROLES.includes(role.id));
         if (!hasAdminRole) {
             return await interaction.reply({
@@ -117,209 +76,264 @@ module.exports = {
         try {
             switch (subcommand) {
                 case 'setchannel':
-                    const channel = interaction.options.getChannel('channel');
-                    await interaction.client.persistentEmbed.setPersistentChannel(channel.id);
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
                     await interaction.reply({
-                        content: `✅ Persistent embed set in ${channel}`,
+                        content: `✅ Admin status board set in ${boardChannel}`,
                         ephemeral: true
                     });
                     break;
+                    const channel = interaction.options.getChannel('channel');
 
-                case 'setapprovalchannel':
-                    const approvalChannel = interaction.options.getChannel('channel');
-                    const approvalManager = new ApprovalManager(interaction.client);
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
                     
-                    await approvalManager.setApprovalChannelId(approvalChannel.id);
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
                     
                     await interaction.reply({
-                        content: `✅ Approval channel set to ${approvalChannel}`,
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    // Store channel ID in environment or database
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    process.env.PERSISTENT_CHANNEL_ID = channel.id;
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    const embedBuilder = new WipeEmbedBuilder(db);
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    const embedData = await embedBuilder.buildEmbed();
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    const message = await channel.send(embedData);
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    // Store message ID for future updates
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    process.env.PERSISTENT_MESSAGE_ID = message.id;
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    await interaction.reply({
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                        content: `✅ Persistent embed set in ${channel}`,
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                        ephemeral: true
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    });
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
+                        ephemeral: true
+                    });
+                    break;
+                    break;
+
+                case 'setadminboard':
+                    const boardChannel = interaction.options.getChannel('channel');
+                    
+                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
+                    
+                    await interaction.reply({
+                        content: `✅ Admin status board set in ${boardChannel}`,
                         ephemeral: true
                     });
                     break;
 
                 case 'runselection':
-                    await interaction.deferReply({ ephemeral: true });
+                    const algorithm = new SelectionAlgorithm(db);
                     
-                    const manager = new ApprovalManager(interaction.client);
+                    // Create new cycle first
+                    const startDate = new Date().toISOString().split('T')[0];
+                    const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                    const cycleId = await queries.createNewCycle(startDate, endDate);
                     
-                    try {
-                        await manager.runSelectionForApproval();
-                        await interaction.editReply({
-                            content: '✅ Selection algorithm completed and sent for approval!'
-                        });
-                    } catch (error) {
-                        console.error('Selection error:', error);
-                        await interaction.editReply({
-                            content: '❌ Error running selection algorithm.'
-                        });
-                    }
-                    break;
-
-                case 'cancelselection':
-                    await interaction.deferReply({ ephemeral: true });
+                    const result = await algorithm.selectPlayers(cycleId);
                     
-                    const cancelManager = new ApprovalManager(interaction.client);
-                    
-                    try {
-                        // Check if there's a pending selection
-                        const pendingSelection = await cancelManager.algorithm.getPendingSelection();
-                        if (!pendingSelection) {
-                            return await interaction.editReply({
-                                content: '❌ No pending selection to cancel.'
-                            });
-                        }
-
-                        // Clear pending selection data
-                        await cancelManager.algorithm.clearPendingSelection();
-                        await cancelManager.clearSelectionTimeout();
-
-                        // Try to update approval message to show cancellation
-                        const channelId = await cancelManager.getApprovalChannelId();
-                        if (channelId) {
-                            try {
-                                const channel = await interaction.client.channels.fetch(channelId);
-                                
-                                const cancelledEmbed = new EmbedBuilder()
-                                    .setTitle('❌ SELECTION CANCELLED')
-                                    .setDescription(`Selection cancelled by ${interaction.user.username}`)
-                                    .setColor(0xE74C3C)
-                                    .setTimestamp();
-
-                                // Find the most recent approval message and update it
-                                const messages = await channel.messages.fetch({ limit: 10 });
-                                const approvalMessage = messages.find(m => 
-                                    m.author.id === interaction.client.user.id && 
-                                    m.embeds[0]?.title?.includes('ADMIN APPROVAL REQUIRED')
-                                );
-
-                                if (approvalMessage) {
-                                    await approvalMessage.edit({ embeds: [cancelledEmbed], components: [] });
-                                }
-                            } catch (error) {
-                                console.error('Error updating approval message:', error);
-                            }
-                        }
-
-                        await interaction.editReply({
-                            content: '✅ Pending selection cancelled successfully!'
-                        });
-
-                        console.log(`❌ Selection cancelled by ${interaction.user.username}`);
-
-                    } catch (error) {
-                        console.error('Cancel selection error:', error);
-                        await interaction.editReply({
-                            content: '❌ Error cancelling selection.'
-                        });
-                    }
-                    break;
-
-                case 'marknoshow':
-                    const noShowUser = interaction.options.getUser('user');
-                    
-                    // Check if player exists
-                    const player = await new Promise((resolve, reject) => {
-                        db.get('SELECT * FROM players WHERE discord_id = ?', [noShowUser.id], (err, row) => {
-                            if (err) reject(err);
-                            else resolve(row);
-                        });
-                    });
-
-                    if (!player) {
-                        return await interaction.reply({
-                            content: `❌ ${noShowUser.username} is not in the player pool.`,
-                            ephemeral: true
-                        });
-                    }
-
-                    // Get most recent completed cycle
-                    const lastCycle = await new Promise((resolve, reject) => {
-                        db.get(`
-                            SELECT * FROM wipe_cycles 
-                            WHERE status = 'completed' 
-                            ORDER BY cycle_id DESC LIMIT 1
-                        `, (err, row) => {
-                            if (err) reject(err);
-                            else resolve(row);
-                        });
-                    });
-
-                    if (!lastCycle) {
-                        return await interaction.reply({
-                            content: '❌ No completed wipe cycles found.',
-                            ephemeral: true
-                        });
-                    }
-
-                    // Check if player has history for that cycle
-                    const existingHistory = await new Promise((resolve, reject) => {
-                        db.get(`
-                            SELECT * FROM player_history 
-                            WHERE player_id = ? AND cycle_id = ?
-                        `, [noShowUser.id, lastCycle.cycle_id], (err, row) => {
-                            if (err) reject(err);
-                            else resolve(row);
-                        });
-                    });
-
-                    if (existingHistory) {
-                        // Update existing record to mark as no-show
-                        await new Promise((resolve, reject) => {
-                            db.run(`
-                                UPDATE player_history 
-                                SET participated = 0, no_show = 1 
-                                WHERE player_id = ? AND cycle_id = ?
-                            `, [noShowUser.id, lastCycle.cycle_id], (err) => {
-                                if (err) reject(err);
-                                else resolve();
-                            });
-                        });
+                    if (result.requiresAdminSelection) {
+                        // Create tie-breaking interface
+                        await this.handleTieBreaking(interaction, result);
                     } else {
-                        // Create new record for no-show
-                        await new Promise((resolve, reject) => {
-                            db.run(`
-                                INSERT INTO player_history (player_id, cycle_id, participated, no_show, timestamp)
-                                VALUES (?, ?, 0, 1, ?)
-                            `, [noShowUser.id, lastCycle.cycle_id, lastCycle.start_date + ' 19:00:00'], (err) => {
-                                if (err) reject(err);
-                                else resolve();
-                            });
+                        // Save selection and notify
+                        await queries.updateCycleSelection(cycleId, {
+                            selected: result.selected,
+                            backup: result.backup
                         });
+                        
+                        const embed = new EmbedBuilder()
+                            .setTitle('✅ Selection Complete')
+                            .setDescription('Players have been selected automatically.')
+                            .addFields(
+                                {
+                                    name: 'Selected Players',
+                                    value: result.selected.map((p, i) => `${i + 1}. <@${p.discord_id}>`).join('\n'),
+                                    inline: false
+                                }
+                            )
+                            .setColor(0x57F287);
+                        
+                        await interaction.reply({ embeds: [embed], ephemeral: true });
                     }
-
-                    // Decrease total games played if they were counted as participated
-                    if (existingHistory && existingHistory.participated) {
-                        await new Promise((resolve, reject) => {
-                            db.run(`
-                                UPDATE players 
-                                SET total_games_played = MAX(0, total_games_played - 1) 
-                                WHERE discord_id = ?
-                            `, [noShowUser.id], (err) => {
-                                if (err) reject(err);
-                                else resolve();
-                            });
-                        });
-                    }
-
-                    await interaction.reply({
-                        content: `⚠️ ${noShowUser.username} marked as no-show for ${lastCycle.start_date}. This will negatively impact their priority score.`,
-                        ephemeral: true
-                    });
-
-                    setTimeout(async () => {
-                        try {
-                            await interaction.deleteReply();
-                        } catch (err) {
-                            console.log('Could not delete reply:', err.message);
-                        }
-                    }, 30000);
                     break;
 
                 case 'viewscores':
                     const players = await queries.getAllPlayers();
                     const scores = [];
-
+                    
                     for (const player of players) {
+                        if (!player.active) continue;
                         const score = await queries.calculatePriorityScore(player.discord_id);
                         scores.push({
                             username: player.username,
@@ -328,59 +342,38 @@ module.exports = {
                             breakdown: score
                         });
                     }
-
+                    
                     scores.sort((a, b) => b.score - a.score);
-
+                    
                     const scoreText = scores.map((s, i) => {
                         const locked = s.breakdown.locked ? '🔒' : '';
-                        const noShow = s.breakdown.recentNoShows > 0 ? '⚠️' : '';
-                        return `${i + 1}. ${locked}${noShow}<@${s.discord_id}> - **${s.score}** pts`;
+                        return `${i + 1}. ${locked}<@${s.discord_id}> - **${s.score}** pts`;
                     }).join('\n');
-
+                    
                     const scoresEmbed = new EmbedBuilder()
                         .setTitle('📊 Player Priority Scores')
                         .setDescription(scoreText || 'No active players')
-                        .setFooter({ text: '⚠️ = Recent no-show penalty' })
                         .setColor(0x3498DB);
-
+                    
                     await interaction.reply({ embeds: [scoresEmbed], ephemeral: true });
-
-                    setTimeout(async () => {
-                        try {
-                            await interaction.deleteReply();
-                        } catch (err) {
-                            console.log('Could not delete reply:', err.message);
-                        }
-                    }, 30000);
                     break;
 
                 case 'addplayer':
                     const user = interaction.options.getUser('user');
-
-                    const existingPlayer = await new Promise((resolve, reject) => {
-                        db.get('SELECT * FROM players WHERE discord_id = ?', [user.id], (err, row) => {
-                            if (err) reject(err);
-                            else resolve(row);
-                        });
-                    });
-
+                    
+                    const existingPlayer = await db.get('SELECT * FROM players WHERE discord_id = ?', [user.id]);
                     if (existingPlayer) {
                         return await interaction.reply({
                             content: `❌ ${user.username} is already in the player pool.`,
                             ephemeral: true
                         });
                     }
-
-                    await new Promise((resolve, reject) => {
-                        db.run(`
-                            INSERT INTO players (discord_id, username, join_date, total_games_played)
-                            VALUES (?, ?, CURRENT_DATE, 0)
-                        `, [user.id, user.username], (err) => {
-                            if (err) reject(err);
-                            else resolve();
-                        });
-                    });
-
+                    
+                    await db.run(`
+                        INSERT INTO players (discord_id, username, join_date, total_games_played, active)
+                        VALUES (?, ?, CURRENT_DATE, 0, 1)
+                    `, [user.id, user.username]);
+                    
                     await interaction.reply({
                         content: `✅ ${user.username} added to player pool.`,
                         ephemeral: true
@@ -388,235 +381,73 @@ module.exports = {
                     break;
 
                 case 'updateembed':
-                    if (interaction.client.persistentEmbed) {
-                        await interaction.client.persistentEmbed.forceUpdate();
-                        await interaction.reply({
-                            content: '✅ Persistent embed updated.',
-                            ephemeral: true
-                        });
-                    } else {
-                        await interaction.reply({
+                    const channelId = process.env.PERSISTENT_CHANNEL_ID;
+                    const messageId = process.env.PERSISTENT_MESSAGE_ID;
+                    
+                    if (!channelId || !messageId) {
+                        return await interaction.reply({
                             content: '❌ No persistent embed set. Use `/admin setchannel` first.',
                             ephemeral: true
                         });
                     }
+                    
+                    const embedChannel = await interaction.client.channels.fetch(channelId);
+                    const embedMessage = await embedChannel.messages.fetch(messageId);
+                    
+                    const embedBuilder2 = new WipeEmbedBuilder(db);
+                    const newEmbedData = await embedBuilder2.buildEmbed();
+                    
+                    await embedMessage.edit(newEmbedData);
+                    
+                    await interaction.reply({
+                        content: '✅ Persistent embed updated.',
+                        ephemeral: true
+                    });
                     break;
 
                 case 'lockplayer':
                     const userToLock = interaction.options.getUser('user');
-
-                    const currentLocked = await new Promise((resolve, reject) => {
-                        db.get('SELECT discord_id, username FROM players WHERE locked = 1', (err, row) => {
-                            if (err) reject(err);
-                            else resolve(row);
-                        });
-                    });
-
+                    
+                    // Check if anyone is already locked
+                    const currentLocked = await db.get('SELECT discord_id, username FROM players WHERE locked = 1');
                     if (currentLocked) {
                         return await interaction.reply({
                             content: `❌ ${currentLocked.username} is already locked. Use \`/admin unlockplayer\` first.`,
                             ephemeral: true
                         });
                     }
-
-                    const playerToLock = await new Promise((resolve, reject) => {
-                        db.get('SELECT * FROM players WHERE discord_id = ?', [userToLock.id], (err, row) => {
-                            if (err) reject(err);
-                            else resolve(row);
-                        });
-                    });
-
+                    
+                    // Check if user is in player pool
+                    const playerToLock = await db.get('SELECT * FROM players WHERE discord_id = ? AND active = 1', [userToLock.id]);
                     if (!playerToLock) {
                         return await interaction.reply({
                             content: `❌ ${userToLock.username} is not in the active player pool.`,
                             ephemeral: true
                         });
                     }
-
-                    await new Promise((resolve, reject) => {
-                        db.run('UPDATE players SET locked = 1 WHERE discord_id = ?', [userToLock.id], (err) => {
-                            if (err) reject(err);
-                            else resolve();
-                        });
-                    });
-
+                    
+                    // Lock the player
+                    await db.run('UPDATE players SET locked = 1 WHERE discord_id = ?', [userToLock.id]);
+                    
                     await interaction.reply({
                         content: `🔒 ${userToLock.username} is now locked to slot 1 for all future selections.`,
                         ephemeral: true
                     });
-
-                    setTimeout(async () => {
-                        try {
-                            await interaction.deleteReply();
-                        } catch (err) {
-                            console.log('Could not delete reply:', err.message);
-                        }
-                    }, 30000);
                     break;
 
                 case 'unlockplayer':
-                    const lockedPlayer = await new Promise((resolve, reject) => {
-                        db.get('SELECT discord_id, username FROM players WHERE locked = 1', (err, row) => {
-                            if (err) reject(err);
-                            else resolve(row);
-                        });
-                    });
-
+                    const lockedPlayer = await db.get('SELECT discord_id, username FROM players WHERE locked = 1');
                     if (!lockedPlayer) {
                         return await interaction.reply({
                             content: `❌ No player is currently locked.`,
                             ephemeral: true
                         });
                     }
-
-                    await new Promise((resolve, reject) => {
-                        db.run('UPDATE players SET locked = 0 WHERE locked = 1', (err) => {
-                            if (err) reject(err);
-                            else resolve();
-                        });
-                    });
-
+                    
+                    await db.run('UPDATE players SET locked = 0 WHERE locked = 1');
+                    
                     await interaction.reply({
                         content: `🔓 ${lockedPlayer.username} is no longer locked.`,
-                        ephemeral: true
-                    });
-
-                    setTimeout(async () => {
-                        try {
-                            await interaction.deleteReply();
-                        } catch (err) {
-                            console.log('Could not delete reply:', err.message);
-                        }
-                    }, 30000);
-                    break;
-
-                case 'removeplayer':
-                    const userToRemove = interaction.options.getUser('user');
-
-                    const playerToRemove = await new Promise((resolve, reject) => {
-                        db.get('SELECT * FROM players WHERE discord_id = ?', [userToRemove.id], (err, row) => {
-                            if (err) reject(err);
-                            else resolve(row);
-                        });
-                    });
-
-                    if (!playerToRemove) {
-                        return await interaction.reply({
-                            content: `❌ ${userToRemove.username} is not in the player pool.`,
-                            ephemeral: true
-                        });
-                    }
-
-                    await new Promise((resolve, reject) => {
-                        db.run('DELETE FROM players WHERE discord_id = ?', [userToRemove.id], (err) => {
-                            if (err) reject(err);
-                            else resolve();
-                        });
-                    });
-
-                    await interaction.reply({
-                        content: `🗑️ ${userToRemove.username} removed from player pool.`,
-                        ephemeral: true
-                    });
-
-                    setTimeout(async () => {
-                        try {
-                            await interaction.deleteReply();
-                        } catch (err) {
-                            console.log('Could not delete reply:', err.message);
-                        }
-                    }, 30000);
-                    break;
-
-                case 'setstate':
-                    const newState = interaction.options.getInteger('state');
-                    const stateManager = interaction.client.stateManager;
-                    
-                    if (!stateManager) {
-                        return await interaction.reply({
-                            content: '❌ State manager not initialized.',
-                            ephemeral: true
-                        });
-                    }
-
-                    await stateManager.forceState(newState, `Manual override by ${interaction.user.username}`);
-
-                    const stateNames = {
-                        1: 'Wipe in Progress',
-                        2: 'Pre-Selection', 
-                        3: 'Selection Results'
-                    };
-
-                    await interaction.reply({
-                        content: `✅ State manually set to: **${stateNames[newState]}** (${newState})`,
-                        ephemeral: true
-                    });
-                    break;
-
-                case 'viewstate':
-                    const sm = interaction.client.stateManager;
-                    
-                    if (!sm) {
-                        return await interaction.reply({
-                            content: '❌ State manager not initialized.',
-                            ephemeral: true
-                        });
-                    }
-
-                    const currentState = await sm.getCurrentState();
-                    const correctState = sm.calculateCorrectState();
-                    const nextTransition = sm.getNextTransitionTime();
-
-                    const stateEmbed = new EmbedBuilder()
-                        .setTitle('📊 State Manager Information')
-                        .addFields(
-                            {
-                                name: 'Current State',
-                                value: `**${sm.STATE_NAMES[currentState]}** (${currentState})`,
-                                inline: true
-                            },
-                            {
-                                name: 'Calculated State',
-                                value: `**${sm.STATE_NAMES[correctState]}** (${correctState})`,
-                                inline: true
-                            },
-                            {
-                                name: 'States Match?',
-                                value: currentState === correctState ? '✅ Yes' : '❌ No (manual override active)',
-                                inline: true
-                            },
-                            {
-                                name: 'Next Transition',
-                                value: `<t:${Math.floor(nextTransition.getTime() / 1000)}:F>`,
-                                inline: false
-                            },
-                            {
-                                name: 'Time Until Transition',
-                                value: `<t:${Math.floor(nextTransition.getTime() / 1000)}:R>`,
-                                inline: false
-                            }
-                        )
-                        .setColor(currentState === correctState ? 0x57F287 : 0xF39C12)
-                        .setTimestamp();
-
-                    await interaction.reply({ embeds: [stateEmbed], ephemeral: true });
-                    break;
-
-                case 'resetstate':
-                    const resetSM = interaction.client.stateManager;
-                    
-                    if (!resetSM) {
-                        return await interaction.reply({
-                            content: '❌ State manager not initialized.',
-                            ephemeral: true
-                        });
-                    }
-
-                    const autoState = resetSM.calculateCorrectState();
-                    await resetSM.forceState(autoState, `Reset to automatic by ${interaction.user.username}`);
-
-                    await interaction.reply({
-                        content: `✅ State reset to automatic calculation: **${resetSM.STATE_NAMES[autoState]}** (${autoState})`,
                         ephemeral: true
                     });
                     break;
@@ -634,5 +465,40 @@ module.exports = {
                 ephemeral: true
             });
         }
+    },
+
+    async handleTieBreaking(interaction, selectionResult) {
+        const ties = selectionResult.ties[0]; // Handle first tie group
+        
+        const embed = new EmbedBuilder()
+            .setTitle('⚖️ Tie-Breaking Required')
+            .setDescription('Multiple players have the same priority score. Please select manually:')
+            .setColor(0xF39C12);
+
+        // Add tied players as fields
+        ties.forEach((player, index) => {
+            embed.addFields({
+                name: `Option ${index + 1}: ${player.username}`,
+                value: `Score: ${player.totalScore}\nWeeks since last: ${player.breakdown.weeksSinceLastPlayed}\nTotal games: ${player.breakdown.totalGamesPlayed}`,
+                inline: true
+            });
+        });
+
+        // Create buttons for each tied player
+        const buttons = ties.map((player, index) => 
+            new ButtonBuilder()
+                .setCustomId(`tie_select_${player.discord_id}`)
+                .setLabel(`Select ${player.username}`)
+                .setStyle(ButtonStyle.Primary)
+        );
+
+        const row = new ActionRowBuilder().addComponents(buttons);
+
+        await interaction.reply({
+            content: `<@&661441458804621332> <@&661441014535553044>`,
+            embeds: [embed],
+            components: [row],
+            ephemeral: false
+        });
     }
 };

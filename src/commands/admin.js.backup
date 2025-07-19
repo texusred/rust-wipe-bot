@@ -1,0 +1,205 @@
+const { SlashCommandBuilder, EmbedBuilder, ChannelType } = require('discord.js');
+const SelectionAlgorithm = require('../services/selectionAlgorithm');
+const DatabaseQueries = require('../database/queries');
+
+const ADMIN_ROLES = ['661441014535553044', '661441458804621332'];
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('admin')
+        .setDescription('Admin commands for wipe management')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('setchannel')
+                .setDescription('Set the persistent embed channel')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                        .setDescription('Channel for persistent embed')
+                        .addChannelTypes(ChannelType.GuildText)
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('runselection')
+                .setDescription('Run the selection algorithm'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('viewscores')
+                .setDescription('View all player priority scores'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('addplayer')
+                .setDescription('Add a player to the pool')
+                .addUserOption(option =>
+                    option.setName('player')
+                        .setDescription('Discord user to add')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('updateembed')
+                .setDescription('Force update the persistent embed')),
+
+    async execute(interaction) {
+        const hasAdminRole = interaction.member.roles.cache.some(role => 
+            ADMIN_ROLES.includes(role.id)
+        );
+
+        if (!hasAdminRole) {
+            return await interaction.reply({ 
+                content: '❌ You do not have permission to use admin commands.', 
+                ephemeral: true 
+            });
+        }
+
+        const subcommand = interaction.options.getSubcommand();
+
+        switch (subcommand) {
+            case 'setchannel':
+                await this.setChannel(interaction);
+                break;
+            case 'runselection':
+                await this.runSelection(interaction);
+                break;
+            case 'viewscores':
+                await this.viewScores(interaction);
+                break;
+            case 'addplayer':
+                await this.addPlayer(interaction);
+                break;
+            case 'updateembed':
+                await this.updateEmbed(interaction);
+                break;
+        }
+    },
+
+    async setChannel(interaction) {
+        const channel = interaction.options.getChannel('channel');
+        
+        if (!interaction.client.persistentEmbed) {
+            return await interaction.reply({ 
+                content: '❌ Persistent embed manager not initialized!', 
+                ephemeral: true 
+            });
+        }
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            await interaction.client.persistentEmbed.setPersistentChannel(channel.id);
+            
+            const embed = new EmbedBuilder()
+                .setTitle('✅ Persistent Channel Set')
+                .setDescription(`Persistent embed will now appear in ${channel}`)
+                .addFields(
+                    { name: 'Auto-Update', value: 'Every 30 seconds', inline: true },
+                    { name: 'Manual Update', value: '/admin updateembed', inline: true }
+                )
+                .setColor(0x57F287);
+
+            await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            console.error('Error setting persistent channel:', error);
+            await interaction.editReply({ content: '❌ Error setting persistent channel!' });
+        }
+    },
+
+    async updateEmbed(interaction) {
+        if (!interaction.client.persistentEmbed) {
+            return await interaction.reply({ 
+                content: '❌ Persistent embed manager not initialized!', 
+                ephemeral: true 
+            });
+        }
+
+        await interaction.deferReply({ ephemeral: true });
+        
+        try {
+            await interaction.client.persistentEmbed.forceUpdate();
+            await interaction.editReply({ content: '✅ Persistent embed updated!' });
+        } catch (error) {
+            console.error('Error updating embed:', error);
+            await interaction.editReply({ content: '❌ Error updating embed!' });
+        }
+    },
+
+    async runSelection(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+        
+        const db = interaction.client.db;
+        const queries = new DatabaseQueries(db);
+        const algorithm = new SelectionAlgorithm(db);
+        
+        let cycle = await queries.getCurrentCycle();
+        if (!cycle) {
+            const startDate = new Date().toISOString().split('T')[0];
+            const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const cycleId = await queries.createNewCycle(startDate, endDate);
+            cycle = { cycle_id: cycleId };
+        }
+        
+        const result = await algorithm.selectPlayers(cycle.cycle_id);
+        
+        // Update persistent embed after selection
+        if (interaction.client.persistentEmbed) {
+            await interaction.client.persistentEmbed.forceUpdate();
+        }
+        
+        const embed = new EmbedBuilder()
+            .setTitle('🎯 Selection Algorithm Results')
+            .setDescription('Player selection completed')
+            .addFields(
+                {
+                    name: 'Selected Players',
+                    value: result.selected.map((p, i) => `${i+1}. <@${p.discord_id}> (Score: ${p.priorityScore})`).join('\n') || 'None',
+                    inline: false
+                },
+                {
+                    name: 'Backup Queue',
+                    value: result.backup.slice(0, 5).map((p, i) => `${i+1}. <@${p.discord_id}> (Score: ${p.priorityScore})`).join('\n') || 'None',
+                    inline: false
+                }
+            )
+            .setColor(0x57F287);
+
+        await interaction.editReply({ embeds: [embed] });
+    },
+
+    async viewScores(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+        
+        const db = interaction.client.db;
+        const algorithm = new SelectionAlgorithm(db);
+        
+        const scoredPlayers = await algorithm.calculatePlayerScores();
+        
+        const scoreText = scoredPlayers.slice(0, 10).map((p, i) => 
+            `${i+1}. <@${p.discord_id}>: ${p.priorityScore} pts`
+        ).join('\n');
+        
+        const embed = new EmbedBuilder()
+            .setTitle('📊 Player Priority Scores')
+            .setDescription(scoreText || 'No players found')
+            .setColor(0x3498DB);
+
+        await interaction.editReply({ embeds: [embed] });
+    },
+
+    async addPlayer(interaction) {
+        const user = interaction.options.getUser('player');
+        const db = interaction.client.db;
+        const queries = new DatabaseQueries(db);
+        
+        try {
+            await queries.addPlayer(user.id, user.username);
+            
+            const embed = new EmbedBuilder()
+                .setTitle('✅ Player Added')
+                .setDescription(`<@${user.id}> has been added to the player pool`)
+                .setColor(0x57F287);
+
+            await interaction.reply({ embeds: [embed], ephemeral: true });
+        } catch (error) {
+            console.error(error);
+            await interaction.reply({ content: 'Error adding player!', ephemeral: true });
+        }
+    }
+};

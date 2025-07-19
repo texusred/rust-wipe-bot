@@ -1,0 +1,122 @@
+const DatabaseQueries = require('../database/queries');
+
+class SelectionAlgorithm {
+    constructor(db) {
+        this.queries = new DatabaseQueries(db);
+        this.db = db;
+    }
+
+    async calculatePlayerScores() {
+        const players = await this.queries.getAllPlayers();
+        const scoredPlayers = [];
+
+        for (const player of players) {
+            const score = await this.calculatePriorityScore(player);
+            scoredPlayers.push({
+                ...player,
+                priorityScore: score.total,
+                breakdown: score.breakdown
+            });
+        }
+
+        return scoredPlayers.sort((a, b) => b.priorityScore - a.priorityScore);
+    }
+
+    async calculatePriorityScore(player) {
+        const history = await this.queries.getPlayerHistory(player.discord_id);
+        const hasInterest = await this.queries.hasExpressedInterest(player.discord_id);
+        
+        // Calculate weeks since last played
+        const lastPlayed = this.getLastPlayedWeeks(history);
+        const baseScore = Math.min(lastPlayed * 10, 50);
+        
+        // Interest bonus
+        const interestBonus = hasInterest ? 15 : 0;
+        
+        // Consecutive weeks penalty
+        const consecutiveWeeks = this.getConsecutiveWeeks(history);
+        const consecutivePenalty = Math.max(0, (consecutiveWeeks - 1) * 8);
+        
+        // Cooldown penalty (3+ games in 6 weeks)
+        const recentGames = history.filter(h => h.participated).length;
+        const cooldownPenalty = recentGames >= 3 ? 50 : 0;
+        
+        const total = baseScore + interestBonus - consecutivePenalty - cooldownPenalty;
+        
+        return {
+            total: Math.max(0, total),
+            breakdown: {
+                baseScore,
+                interestBonus,
+                consecutivePenalty,
+                cooldownPenalty,
+                lastPlayed,
+                consecutiveWeeks,
+                recentGames
+            }
+        };
+    }
+
+    getLastPlayedWeeks(history) {
+        if (history.length === 0) return 10; // New player gets high score
+        
+        const lastGame = history.find(h => h.participated);
+        if (!lastGame) return 10;
+        
+        const weeksDiff = Math.floor((Date.now() - new Date(lastGame.start_date)) / (1000 * 60 * 60 * 24 * 7));
+        return Math.max(0, weeksDiff);
+    }
+
+    getConsecutiveWeeks(history) {
+        let consecutive = 0;
+        const sortedHistory = history.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+        
+        for (const record of sortedHistory) {
+            if (record.participated) {
+                consecutive++;
+            } else {
+                break;
+            }
+        }
+        return consecutive;
+    }
+
+    async selectPlayers(slotsNeeded = 4) {
+        const scoredPlayers = await this.calculatePlayerScores();
+        
+        // Separate interested and non-interested players
+        const interestedPlayers = [];
+        const nonInterestedPlayers = [];
+        
+        for (const player of scoredPlayers) {
+            const hasInterest = await this.queries.hasExpressedInterest(player.discord_id);
+            if (hasInterest) {
+                interestedPlayers.push(player);
+            } else {
+                nonInterestedPlayers.push(player);
+            }
+        }
+        
+        // Fill slots with interested players first, then non-interested
+        const selected = [];
+        const backup = [];
+        
+        // Fill from interested players
+        const toSelect = Math.min(slotsNeeded, interestedPlayers.length);
+        selected.push(...interestedPlayers.slice(0, toSelect));
+        backup.push(...interestedPlayers.slice(toSelect));
+        
+        // Fill remaining slots from non-interested if needed
+        const remainingSlots = slotsNeeded - selected.length;
+        if (remainingSlots > 0) {
+            selected.push(...nonInterestedPlayers.slice(0, remainingSlots));
+            backup.push(...nonInterestedPlayers.slice(remainingSlots));
+        } else {
+            backup.push(...nonInterestedPlayers);
+        }
+        
+        return { selected, backup };
+    }
+}
+
+module.exports = SelectionAlgorithm;

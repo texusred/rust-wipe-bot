@@ -1,0 +1,21 @@
+    expressInterest(playerId) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const currentCycle = await this.getCurrentCycle();
+                if (!currentCycle) {
+                    reject(new Error('No active cycle found'));
+                    return;
+                }
+
+                this.db.run(`
+                    INSERT OR REPLACE INTO interest_expressions (player_id, cycle_id)
+                    VALUES (?, ?)
+                `, [playerId, currentCycle.cycle_id], function(err) {
+                    if (err) reject(err);
+                    else resolve(this);
+                });
+            } catch (error) {
+                reject(error);
+            }
+        });
+    },

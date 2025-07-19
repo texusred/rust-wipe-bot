@@ -1,0 +1,23 @@
+-- Add these new subcommands to the existing admin command --
+
+.addSubcommand(subcommand =>
+    subcommand
+        .setName('setstate')
+        .setDescription('Manually set embed state for testing')
+        .addIntegerOption(option =>
+            option.setName('state')
+                .setDescription('State to set')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'Wipe in Progress', value: 1 },
+                    { name: 'Pre-Selection', value: 2 },
+                    { name: 'Selection Results', value: 3 }
+                )))
+.addSubcommand(subcommand =>
+    subcommand
+        .setName('viewstate')
+        .setDescription('View current state information'))
+.addSubcommand(subcommand =>
+    subcommand
+        .setName('resetstate')
+        .setDescription('Reset state to automatic calculation'))

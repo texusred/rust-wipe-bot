@@ -1,0 +1,12 @@
+/var/log/rust-wipe-bot/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 644 lightning lightning
+    postrotate
+        systemctl reload rust-wipe-bot
+    endscript
+}

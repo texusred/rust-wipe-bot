@@ -1,0 +1,7 @@
+Need to add to admin.js:
+
+1. New subcommand: 'marknoshow'
+2. Function to apply no-show penalty
+3. Update scoring algorithm to account for no-shows
+
+Penalty should be significant (maybe -50 points or reset to 0) to discourage no-shows.

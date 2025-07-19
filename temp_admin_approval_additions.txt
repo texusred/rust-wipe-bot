@@ -1,0 +1,48 @@
+Add these to admin.js:
+
+1. Add to imports at top:
+const ApprovalManager = require('../services/approvalManager');
+
+2. Add new subcommand after 'resetstate':
+.addSubcommand(subcommand =>
+    subcommand
+        .setName('setapprovalchannel')
+        .setDescription('Set channel for selection approval requests')
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('Channel for approval notifications')
+                .setRequired(true)))
+.addSubcommand(subcommand =>
+    subcommand
+        .setName('runselection')
+        .setDescription('Manually trigger selection process'))
+
+3. Add to switch statement:
+case 'setapprovalchannel':
+    const approvalChannel = interaction.options.getChannel('channel');
+    const approvalManager = new ApprovalManager(interaction.client);
+    
+    await approvalManager.setApprovalChannelId(approvalChannel.id);
+    
+    await interaction.reply({
+        content: `✅ Approval channel set to ${approvalChannel}`,
+        ephemeral: true
+    });
+    break;
+
+case 'runselection':
+    await interaction.deferReply({ ephemeral: true });
+    
+    const manager = new ApprovalManager(interaction.client);
+    
+    try {
+        await manager.runSelectionForApproval();
+        await interaction.editReply({
+            content: '✅ Selection algorithm completed and sent for approval!'
+        });
+    } catch (error) {
+        await interaction.editReply({
+            content: '❌ Error running selection algorithm.'
+        });
+    }
+    break;

@@ -1,0 +1,34 @@
+[Unit]
+Description=Rust Wipe Management Discord Bot
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lightning
+Group=lightning
+WorkingDirectory=/mnt/backup-drive/rust-wipe-bot
+ExecStart=/usr/bin/node index.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rust-wipe-bot
+
+# Environment
+Environment=NODE_ENV=production
+EnvironmentFile=/mnt/backup-drive/rust-wipe-bot/.env
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/mnt/backup-drive/rust-wipe-bot
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

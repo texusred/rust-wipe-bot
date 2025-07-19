@@ -1,0 +1,7 @@
+Need to add to admin.js:
+
+New subcommand: 'cancelselection'
+- Clears pending selection from database
+- Removes approval message 
+- Returns to normal state
+- Allows fresh selection to be run

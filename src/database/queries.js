@@ -177,10 +177,10 @@ class DatabaseQueries {
         });
     }
 
-    // ENHANCED PRIORITY SCORING WITH NO-SHOW PENALTIES
+    // SIMPLE WORKING PRIORITY SCORING - FIXED SQL
     async calculatePriorityScore(playerId) {
         return new Promise((resolve, reject) => {
-            this.db.get('SELECT * FROM players WHERE discord_id = ?', [playerId], async (err, player) => {
+            this.db.get('SELECT * FROM players WHERE discord_id = ?', [playerId], (err, player) => {
                 if (err) {
                     reject(err);
                     return;
@@ -190,6 +190,7 @@ class DatabaseQueries {
                     return;
                 }
 
+                // If locked, always priority 1
                 if (player.locked) {
                     resolve({
                         totalScore: 1000,
@@ -198,96 +199,75 @@ class DatabaseQueries {
                     return;
                 }
 
-                try {
-                    // Get most recent participation
-                    const recentHistory = await new Promise((res, rej) => {
-                        this.db.get(`
-                            SELECT ph.timestamp, julianday('now') - julianday(ph.timestamp) as days_ago
-                            FROM player_history ph
-                            WHERE ph.player_id = ? AND ph.participated = 1
-                            ORDER BY ph.timestamp DESC LIMIT 1
-                        `, [playerId], (err, row) => {
-                            if (err) rej(err);
-                            else res(row);
-                        });
-                    });
+                // Get when they last actually played (not no-show) - FIXED SQL
+                this.db.get(`
+                    SELECT julianday('now') - julianday(wc.start_date) as days_ago
+                    FROM player_history ph
+                    JOIN wipe_cycles wc ON ph.cycle_id = wc.cycle_id
+                    WHERE ph.player_id = ? AND ph.participated = 1
+                    ORDER BY wc.start_date DESC LIMIT 1
+                `, [playerId], (err, lastPlayed) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
 
-                    // Calculate weeks since last played
-                    let weeksSinceLastPlayed;
-                    if (!recentHistory) {
-                        weeksSinceLastPlayed = 15; // Never played = max weeks
+                    // Calculate base score
+                    let baseScore;
+                    let weeksAgo;
+                    
+                    if (!lastPlayed) {
+                        // Never played
+                        baseScore = 50;
+                        weeksAgo = 99;
                     } else {
-                        weeksSinceLastPlayed = Math.floor(recentHistory.days_ago / 7);
-                        if (weeksSinceLastPlayed === 0 && recentHistory.days_ago > 0) {
-                           weeksSinceLastPlayed = 1;
-                       }
-                   }
+                        weeksAgo = Math.floor(lastPlayed.days_ago / 7);
+                        if (weeksAgo === 0) baseScore = 5;       // This week
+                        else if (weeksAgo === 1) baseScore = 20; // 1 week ago  
+                        else if (weeksAgo === 2) baseScore = 35; // 2 weeks ago
+                        else baseScore = 50;                     // 3+ weeks ago
+                    }
 
-                   // Base score: weeks since last played * 10, capped at 150
-                   const baseScore = Math.min(weeksSinceLastPlayed * 10, 150);
+                    // Check interest
+                    this.hasExpressedInterest(playerId).then(hasInterest => {
+                        const interestBonus = hasInterest ? 10 : 0;
 
-                   // Check if expressed interest for current cycle
-                   const hasInterest = await this.hasExpressedInterest(playerId);
-                   const interestBonus = hasInterest ? 15 : 0;
+                        // Check no-show - FIXED SQL
+                        this.db.get(`
+                            SELECT COUNT(*) as count
+                            FROM player_history ph
+                            JOIN wipe_cycles wc ON ph.cycle_id = wc.cycle_id
+                            WHERE ph.player_id = ? AND ph.no_show = 1 
+                            AND julianday('now') - julianday(wc.start_date) <= 21
+                        `, [playerId], (err, noShowResult) => {
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
 
-                   // Count recent games (last 6 weeks) for cooldown penalty
-                   const recentGames = await new Promise((res, rej) => {
-                       this.db.get(`
-                           SELECT COUNT(*) as count
-                           FROM player_history ph
-                           JOIN wipe_cycles wc ON ph.cycle_id = wc.cycle_id
-                           WHERE ph.player_id = ? AND ph.participated = 1 
-                           AND julianday('now') - julianday(wc.start_date) <= 42
-                       `, [playerId], (err, row) => {
-                           if (err) rej(err);
-                           else res(row.count || 0);
-                       });
-                   });
+                            const hasNoShow = noShowResult && noShowResult.count > 0;
+                            const noShowPenalty = hasNoShow ? 20 : 0;
 
-                   // NEW: Count recent no-shows (last 6 weeks)
-                   const recentNoShows = await new Promise((res, rej) => {
-                       this.db.get(`
-                           SELECT COUNT(*) as count
-                           FROM player_history ph
-                           JOIN wipe_cycles wc ON ph.cycle_id = wc.cycle_id
-                           WHERE ph.player_id = ? AND ph.no_show = 1 
-                           AND julianday('now') - julianday(wc.start_date) <= 42
-                       `, [playerId], (err, row) => {
-                           if (err) rej(err);
-                           else res(row.count || 0);
-                       });
-                   });
+                            const totalScore = Math.max(0, baseScore + interestBonus - noShowPenalty);
 
-                   // Cooldown penalty if played 3+ times in last 6 weeks
-                   const cooldownPenalty = recentGames >= 3 ? 50 : 0;
-                   
-                   // No-show penalty: -75 points per no-show in last 6 weeks
-                   const noShowPenalty = recentNoShows * 75;
-
-                   const totalScore = Math.max(0, baseScore + interestBonus - cooldownPenalty - noShowPenalty);
-
-                   resolve({
-                       totalScore,
-                       breakdown: {
-                           baseScore,
-                           interestBonus,
-                           cooldownPenalty,
-                           noShowPenalty,
-                           weeksSinceLastPlayed,
-                           recentGames,
-                           recentNoShows,
-                           hasInterest,
-                           locked: false,
-                           daysAgo: recentHistory ? recentHistory.days_ago : null
-                       }
-                   });
-
-               } catch (error) {
-                   reject(error);
-               }
-           });
-       });
-   }
+                            resolve({
+                                totalScore,
+                                breakdown: {
+                                    baseScore,
+                                    interestBonus,
+                                    noShowPenalty,
+                                    weeksAgo,
+                                    hasInterest,
+                                    hasNoShow,
+                                    locked: false
+                                }
+                            });
+                        });
+                    }).catch(reject);
+                });
+            });
+        });
+    }
 }
 
 module.exports = DatabaseQueries;

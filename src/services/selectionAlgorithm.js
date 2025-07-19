@@ -6,7 +6,7 @@ class SelectionAlgorithm {
         this.queries = new DatabaseQueries(db);
     }
 
-    // Main selection function - returns team + backup queue
+    // Main selection function with tie detection
     async runSelection() {
         try {
             console.log('🎯 Running selection algorithm...');
@@ -38,12 +38,16 @@ class SelectionAlgorithm {
                 if (b.priorityScore !== a.priorityScore) {
                     return b.priorityScore - a.priorityScore;
                 }
-                // Tie-breaker: random selection for equal scores
-                return Math.random() - 0.5;
+                // For ties, sort by fewest total games, then by join date
+                if (a.total_games_played !== b.total_games_played) {
+                    return a.total_games_played - b.total_games_played;
+                }
+                return new Date(a.join_date) - new Date(b.join_date);
             });
 
             // Build selected team (4 players)
             const selectedPlayers = [];
+            const ties = [];
             
             // Add locked players first (always slot 1)
             for (const lockedPlayer of lockedPlayers) {
@@ -58,8 +62,46 @@ class SelectionAlgorithm {
 
             // Fill remaining slots with highest priority unlocked players
             const slotsNeeded = 4 - selectedPlayers.length;
-            for (let i = 0; i < slotsNeeded && i < unlockedPlayers.length; i++) {
+            let selectedCount = 0;
+            
+            // Track if we encounter ties during selection
+            for (let i = 0; i < unlockedPlayers.length && selectedCount < slotsNeeded; i++) {
                 const player = unlockedPlayers[i];
+                
+                // Check if this player ties with others for the remaining slots
+                if (selectedCount === slotsNeeded - 1) {
+                    // This is the last slot - check for ties
+                    const tiedPlayers = unlockedPlayers.slice(i).filter(p => 
+                        p.priorityScore === player.priorityScore
+                    );
+                    
+                    if (tiedPlayers.length > 1) {
+                        // We have a tie for the last slot(s)
+                        ties.push({
+                            position: `slot ${selectedPlayers.length + 1}`,
+                            score: player.priorityScore,
+                            players: tiedPlayers.map(p => ({
+                                discord_id: p.discord_id,
+                                username: p.username,
+                                priorityScore: p.priorityScore,
+                                scoreBreakdown: p.scoreBreakdown
+                            }))
+                        });
+                        
+                        // For now, just take the first one (admin can override)
+                        selectedPlayers.push({
+                            discord_id: player.discord_id,
+                            username: player.username,
+                            status: 'pending',
+                            priorityScore: player.priorityScore,
+                            scoreBreakdown: player.scoreBreakdown
+                        });
+                        selectedCount++;
+                        break;
+                    }
+                }
+                
+                // No tie, add normally
                 selectedPlayers.push({
                     discord_id: player.discord_id,
                     username: player.username,
@@ -67,11 +109,12 @@ class SelectionAlgorithm {
                     priorityScore: player.priorityScore,
                     scoreBreakdown: player.scoreBreakdown
                 });
+                selectedCount++;
             }
 
             // Remaining players become backup queue
             const backupQueue = [];
-            const remainingPlayers = unlockedPlayers.slice(slotsNeeded);
+            const remainingPlayers = unlockedPlayers.slice(selectedCount);
             for (const player of remainingPlayers) {
                 backupQueue.push({
                     discord_id: player.discord_id,
@@ -85,11 +128,16 @@ class SelectionAlgorithm {
             const result = {
                 selected: selectedPlayers,
                 backup: backupQueue,
+                ties: ties, // NEW: Include tie information
                 timestamp: new Date().toISOString(),
-                algorithm_version: '1.0'
+                algorithm_version: '2.0'
             };
 
             console.log(`✅ Selection complete: ${selectedPlayers.length} selected, ${backupQueue.length} backup`);
+            if (ties.length > 0) {
+                console.log(`⚠️ Ties detected: ${ties.length} tie(s) require admin review`);
+            }
+            
             return result;
 
         } catch (error) {

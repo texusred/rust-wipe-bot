@@ -129,7 +129,7 @@ module.exports = {
             const newButtons = approvalManager.buildApprovalButtons();
             
             // Find and update the original approval message
-            const channelId = await approvalManager.getApprovalChannelId();
+            const channelId = await approvalManager.getAdminChannelId();
             if (channelId) {
                 const channel = await interaction.client.channels.fetch(channelId);
                 const messages = await channel.messages.fetch({ limit: 10 });

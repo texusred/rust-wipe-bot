@@ -139,14 +139,14 @@ module.exports = {
             const history = await queries.getPlayerHistory(interaction.user.id);
             const hasInterest = await queries.hasExpressedInterest(interaction.user.id);
 
-            const totalGames = history.filter(h => h.participated).length;
-            const lastPlayedWeeks = history.length > 0 ? 2 : 10;
-            const mockScore = Math.min(lastPlayedWeeks * 10, 150) + (hasInterest ? 15 : 0);
+            const totalGames = player.total_games_played;
+            const scoreData = await queries.calculatePriorityScore(interaction.user.id);
+            const realScore = scoreData.totalScore;
 
-            const lastPlayedText = lastPlayedWeeks === 10 ? 'Never' :
-                                  lastPlayedWeeks === 0 ? 'This week' :
-                                  lastPlayedWeeks === 1 ? '1 week ago' :
-                                  `${lastPlayedWeeks} weeks ago`;
+            const lastPlayedText = scoreData.breakdown.weeksAgo === 99 ? 'Never' :
+                                  scoreData.breakdown.weeksAgo === 0 ? 'This week' :
+                                  scoreData.breakdown.weeksAgo === 1 ? '1 week ago' :
+                                  `${scoreData.breakdown.weeksAgo} weeks ago`;
 
             const statusText = player.locked ? '🔒 Locked to slot 1' :
                               player.skip_next_wipe ? '⏭️ Skipping next wipe' :
@@ -158,9 +158,8 @@ module.exports = {
                 .addFields(
                     { name: 'Total Games Played', value: totalGames.toString(), inline: true },
                     { name: 'Last Played', value: lastPlayedText, inline: true },
-                    { name: 'Current Priority Score', value: mockScore.toString(), inline: true },
-                    { name: 'Interest Expressed', value: hasInterest ? 'Yes (+15 pts)' : 'No', inline: true },
-                    { name: 'Recent Games (6 weeks)', value: history.length.toString(), inline: true },
+                    { name: 'Interest Expressed', value: hasInterest ? 'Yes' : 'No', inline: true },
+                    { name: 'Recent Games (6 weeks)', value: totalGames.toString(), inline: true },
                     { name: 'Status', value: statusText, inline: true }
                 )
                 .setColor(0x3498DB)

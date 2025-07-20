@@ -13,14 +13,18 @@ class SelectionAlgorithm {
 
             // Get all active players
             const allPlayers = await this.queries.getAllPlayers();
+            const availablePlayers = allPlayers.filter(p => !p.skip_next_wipe);
             
-            if (allPlayers.length < 4) {
+            // Filter out players who chose to skip next wipe
+            // Filter out players who chose to skip
+            
+            if (availablePlayers.length < 4) {
                 throw new Error('Not enough active players for selection');
             }
 
             // Calculate priority scores for all players
             const playersWithScores = [];
-            for (const player of allPlayers) {
+            for (const player of availablePlayers) {
                 const scoreData = await this.queries.calculatePriorityScore(player.discord_id);
                 playersWithScores.push({
                     ...player,

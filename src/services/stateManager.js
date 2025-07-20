@@ -76,10 +76,39 @@ class StateManager {
     }
 
     // Check if state needs to be updated and do it
+    // Check if there is an approved selection (no pending selection = approved)
+    async hasApprovedSelection() {
+        return new Promise((resolve, reject) => {
+            this.db.get('SELECT value FROM bot_config WHERE key = ?', ['PENDING_SELECTION'], (err, row) => {
+                if (err) reject(err);
+                else {
+                    // If no pending selection, and we have a current cycle with selected players, it's approved
+                    if (!row) {
+                        this.db.get('SELECT selected_players FROM wipe_cycles WHERE status = "active" ORDER BY cycle_id DESC LIMIT 1', (err2, cycle) => {
+                            if (err2) reject(err2);
+                            else resolve(cycle && cycle.selected_players);
+                        });
+                    } else {
+                        resolve(false); // Has pending selection = not approved yet
+                    }
+                }
+            });
+        });
+    }
+
+
     async checkAndUpdateState() {
         try {
             const currentState = await this.getCurrentState();
             const correctState = this.calculateCorrectState();
+            
+            // Check if there is an approved selection for current cycle
+            const hasApprovedSelection = await this.hasApprovedSelection();
+            
+            // If we have an approved selection, stay in State 3 until next Friday
+            if (hasApprovedSelection && correctState !== this.STATES.WIPE_IN_PROGRESS) {
+                return false; // Don't change state - keep showing approved selection
+            }
             
             if (currentState !== correctState) {
                 await this.setState(correctState, 'Automatic state transition based on schedule');

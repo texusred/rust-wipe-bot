@@ -2,132 +2,89 @@
 
 A Discord bot for managing weekly Rust wipe player selection with automated scheduling and priority scoring.
 
-## 🚀 Current Status
+## Current Status
 
-**Version:** Production Ready v2.0  
-**Status:** ✅ Fully Operational  
-**Algorithm:** Balanced Priority Scoring v2.0  
+**Version:** Production Ready v2.1  
+**Status:** Mostly Functional  
+**Algorithm:** Balanced Priority Scoring v2.1 (Fixed!)  
 
-## 📋 Core Features
+## File Directory
+cd /mnt/backup-drive/rust-wipe-bot
 
-### ✅ Three-State System
-- **Wipe in Progress** (Friday 7PM → Saturday 12PM EST)
-- **Pre-Selection** (Saturday 12PM → Monday 5AM EST) 
-- **Selection Results** (Monday 5AM → Friday 7PM EST)
+## Server Management
+# Start the bot
+./bot-management.sh start
 
-### ✅ Priority Scoring Algorithm
-- Never played: 50pts, 2 weeks ago: 35pts, 1 week ago: 20pts, This week: 5pts
-- Interest bonus: +10pts, No-show penalty: -20pts
-- Locked players: 1000pts (guaranteed slot 1)
+# Stop the bot  
+./bot-management.sh stop
 
-### ✅ Automated Features
-- Monday 5AM EST: Automatic selection with admin approval
-- 24-hour auto-approval failsafe
-- Manual team selection with modal interface
-- No-show penalty tracking
+# Restart the bot
+./bot-management.sh restart
 
-## 🎯 Admin Commands
+# Check status
+./bot-management.sh status
 
-- `/admin runselection` - Trigger selection process
-- `/admin cancelselection` - Cancel pending selections  
-- `/admin viewscores` - View player priority scores
-- `/admin marknoshow` - Apply no-show penalties
-- `/admin lockplayer` / `/admin unlockplayer` - Lock management
-- `/admin setstate` / `/admin viewstate` / `/admin resetstate` - State control
-- `/admin setchannel` / `/admin setapprovalchannel` - Channel setup
-- `/admin addplayer` / `/admin removeplayer` - Player management
+# View live logs
+./bot-management.sh logs
 
-## 🎮 User Features
+## Core Features
 
-- **Express Interest** - Get +10 priority bonus
-- **Confirm Participation** - Confirm your slot
-- **Pass Turn** - Give slot to backup player
-- **View Stats** - See your priority score and history
-- **Skip Next Wipe** - Opt out of selection
+### Working Features
+- Three-State System (Wipe in Progress → Pre-Selection → Selection Results)
+- Priority Scoring Algorithm (Fixed - scores now accurate)
+- Admin Status Board (Updates every 5 minutes)
+- Skip Next Wipe functionality (working correctly)
+- View My Stats (cleaned up, no confusing priority scores)
+- Selection Algorithm with skip player exclusion
+- Manual Selection Modal (working)
+- Tie-Breaking Support (shows ties in approval)
 
-## 🔄 Weekly Cycle
+### Known Issues
+- /admin updateembed command not working
+- /admin setchannel command not working  
+- Persistent embed updates have JavaScript errors
+- Confirm deadline now correct (3 days) but embed updates fail
 
-1. **Friday 7PM EST** - Wipe starts, limited functionality
-2. **Saturday 12PM EST** - Pre-selection period begins
-3. **Monday 5AM EST** - Algorithm runs, admin approves
-4. **After approval** - Team confirmed, buttons active
+## Admin Commands
 
-## 🚀 Production Setup
+### Working Commands
+- /admin runselection - Trigger selection process (sends to approval)
+- /admin viewscores - View player priority scores  
+- /admin setadminboard - Set admin status board channel
+- /admin lockplayer / /admin unlockplayer - Lock management
+- /admin addplayer / /admin removeplayer - Player management
 
-- **Systemd service** with auto-restart and boot persistence
-- **Git auto-sync** every 30 minutes
-- **Resource limits** and proper logging
-- **SQLite database** with full audit trail
+### Broken Commands  
+- /admin updateembed - Fails with method errors
+- /admin setchannel - Fails with method errors
 
-## 🔧 Management
+## User Features
+- Express Interest - Get +10 priority bonus
+- Skip Next Wipe - Opt out of selection (working!)
+- View My Stats - See history and status (cleaned up)
+- Confirm Participation - Confirm your slot
+- Pass Turn - Give slot to backup player
 
-```bash
-./bot-management.sh start/stop/restart/status/logs
-./manual-sync.sh "commit message" EOF
-cat > README.md << 'EOF'
-# Rust Wipe Management Discord Bot
+## Current Scoring (All Correct!)
+1. rockst3adii - 1000 pts (locked)
+2. bulc0 - 45 pts (35 base + 10 interest) FIXED
+3. DaSheep - 30 pts (20 base + 10 interest)
+4. datdude81 - 20 pts (20 base, no interest)
+5. Dr DRE - 20 pts (20 base, no interest) 
+6. Stoned Ape - 15 pts (5 base + 10 interest)
+7. Texas - 15 pts (5 base + 10 interest)
+8. Major Hit - 0 pts (no-show penalty working) FIXED
 
-A Discord bot for managing weekly Rust wipe player selection with automated scheduling and priority scoring.
+## Recent Fixes Applied
+- Fixed bulc0 scoring from 5pts to 45pts
+- Fixed Major Hit penalty (now 0pts for no-show)
+- Added skip_next_wipe functionality 
+- Fixed selection algorithm to exclude skip players
+- Cleaned up View My Stats (removed confusing priority scores)
+- Fixed confirm deadline calculation (now 3 days, not 9)
+- Admin status board working with 5-minute updates
 
-## 🚀 Current Status
-
-**Version:** Production Ready v2.0  
-**Status:** ✅ Fully Operational  
-**Algorithm:** Balanced Priority Scoring v2.0  
-
-## 📋 Core Features
-
-### ✅ Three-State System
-- **Wipe in Progress** (Friday 7PM → Saturday 12PM EST)
-- **Pre-Selection** (Saturday 12PM → Monday 5AM EST) 
-- **Selection Results** (Monday 5AM → Friday 7PM EST)
-
-### ✅ Priority Scoring Algorithm
-- Never played: 50pts, 2 weeks ago: 35pts, 1 week ago: 20pts, This week: 5pts
-- Interest bonus: +10pts, No-show penalty: -20pts
-- Locked players: 1000pts (guaranteed slot 1)
-
-### ✅ Automated Features
-- Monday 5AM EST: Automatic selection with admin approval
-- 24-hour auto-approval failsafe
-- Manual team selection with modal interface
-- No-show penalty tracking
-
-## 🎯 Admin Commands
-
-- `/admin runselection` - Trigger selection process
-- `/admin cancelselection` - Cancel pending selections  
-- `/admin viewscores` - View player priority scores
-- `/admin marknoshow` - Apply no-show penalties
-- `/admin lockplayer` / `/admin unlockplayer` - Lock management
-- `/admin setstate` / `/admin viewstate` / `/admin resetstate` - State control
-- `/admin setchannel` / `/admin setapprovalchannel` - Channel setup
-- `/admin addplayer` / `/admin removeplayer` - Player management
-
-## 🎮 User Features
-
-- **Express Interest** - Get +10 priority bonus
-- **Confirm Participation** - Confirm your slot
-- **Pass Turn** - Give slot to backup player
-- **View Stats** - See your priority score and history
-- **Skip Next Wipe** - Opt out of selection
-
-## 🔄 Weekly Cycle
-
-1. **Friday 7PM EST** - Wipe starts, limited functionality
-2. **Saturday 12PM EST** - Pre-selection period begins
-3. **Monday 5AM EST** - Algorithm runs, admin approves
-4. **After approval** - Team confirmed, buttons active
-
-## 🚀 Production Setup
-
-- **Systemd service** with auto-restart and boot persistence
-- **Git auto-sync** every 30 minutes
-- **Resource limits** and proper logging
-- **SQLite database** with full audit trail
-
-## 🔧 Management
-
-```bash
-./bot-management.sh start/stop/restart/status/logs
-./manual-sync.sh "commit message"\
+## Issues for Next Session
+- Persistent embed manager has JavaScript errors
+- Commands updateembed/setchannel broken due to method references
+- Need to fix embed building and persistent updates

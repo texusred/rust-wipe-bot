@@ -39,6 +39,7 @@ class AdminEmbedManager {
                 } catch (error) {
                     console.log('Previous admin message not found, creating new embed');
                     this.messageId = null;
+                    await this.createOrUpdateEmbed();
                 }
             } else {
                 const message = await channel.send(embedData);
@@ -52,18 +53,6 @@ class AdminEmbedManager {
     }
 
     async buildAdminEmbed() {
-    }
-
-    getUpdateStatus() {
-        const now = Date.now();
-        const timeSince = now - (this.lastRealUpdate || now);
-        const minutesAgo = Math.floor(timeSince / 60000);
-        if (minutesAgo === 0) return "Just updated";
-        return `${minutesAgo} minute${minutesAgo === 1 ? "" : "s"} ago`;
-    }
-
-    async buildAdminEmbed() {
-        const updateTime = Date.now();
         const db = this.client.db;
         const queries = new DatabaseQueries(db);
         
@@ -125,7 +114,7 @@ class AdminEmbedManager {
                 },
                 {
                     name: '📅 Last Updated',
-                    value: this.getUpdateStatus(),
+                    value: `<t:${Math.floor(this.lastUpdateTime || Date.now() / 1000)}:R>`,
                     inline: true
                 }
             )

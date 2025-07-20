@@ -23,6 +23,10 @@ class WipeEmbedBuilder {
     // Helper function to get specific event times - FIXED TIMEZONE
     static getEventTimes() {
         const now = new Date();
+        console.log("🕐 DEBUG: Current time checks:");
+        console.log("📅 Now (UTC):", now.toISOString());
+        console.log("📅 Now (EST):", now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        console.log("📅 Now (UK):", now.toLocaleString("en-GB", {timeZone: "Europe/London"}));
         
         // Calculate next Monday 5AM EST (10AM UK time)
         const nextMonday5AMEST = new Date(now);
@@ -39,8 +43,8 @@ class WipeEmbedBuilder {
         if (daysUntilFriday === 0 && now.getUTCHours() >= 0) { // 7PM EST Friday = 12AM UTC Saturday
             daysUntilFriday = 7; // If it's already Saturday, next Friday
         }
-        nextFriday7PMEST.setUTCDate(now.getUTCDate() + daysUntilFriday);
-        nextFriday7PMEST.setUTCHours(0, 0, 0, 0); // 7PM EST Friday = 12AM UTC Saturday
+        times.fridayWipe.setUTCDate(now.getUTCDate() + daysUntilFriday);
+        times.fridayWipe.setUTCHours(0, 0, 0, 0); // 7PM EST Friday = 12AM UTC Saturday
         
         // Calculate next Saturday 12PM EST (5PM UTC)
         const nextSaturday12PMEST = new Date(now);
@@ -48,13 +52,17 @@ class WipeEmbedBuilder {
         if (daysUntilSaturday === 0 && now.getUTCHours() >= 17) { // 12PM EST = 5PM UTC
             daysUntilSaturday = 7; // If it's already Saturday after 5PM UTC, next Saturday
         }
-        nextSaturday12PMEST.setUTCDate(now.getUTCDate() + daysUntilSaturday);
-        nextSaturday12PMEST.setUTCHours(17, 0, 0, 0); // 12PM EST = 5PM UTC
+        times.saturdaySelection.setUTCDate(now.getUTCDate() + daysUntilSaturday);
+        times.saturdaySelection.setUTCHours(17, 0, 0, 0); // 12PM EST = 5PM UTC
         
+        console.log("🎯 Calculated times:");
+        console.log("📅 Next Friday Wipe:", times.fridayWipe.toISOString());
+        console.log("📅 Next Monday Selection:", nextMonday5AMEST.toISOString());
+        console.log("📅 Next Saturday Pre-Selection:", times.saturdaySelection.toISOString());
         return {
             mondayResults: nextMonday5AMEST,
-            fridayWipe: nextFriday7PMEST,
-            saturdaySelection: nextSaturday12PMEST
+            fridayWipe: times.fridayWipe,
+            saturdaySelection: times.saturdaySelection
         };
     }
 
@@ -121,6 +129,10 @@ class WipeEmbedBuilder {
                     .setStyle(ButtonStyle.Secondary)
             );
 
+        console.log("🎯 Calculated times:");
+        console.log("📅 Next Friday Wipe:", times.fridayWipe.toISOString());
+        console.log("📅 Next Monday Selection:", nextMonday5AMEST.toISOString());
+        console.log("📅 Next Saturday Pre-Selection:", times.saturdaySelection.toISOString());
         return { embeds: [embed], components: [row] };
     }
 
@@ -139,12 +151,12 @@ class WipeEmbedBuilder {
                 },
                 {
                     name: '📢 Results Announcement',
-                    value: `<t:${Math.floor(times.mondayResults.getTime() / 1000)}:F>`,
+                    value: `<t:${Math.floor(nextMonday5AMEST.getTime() / 1000)}:F>`,
                     inline: true
                 },
                 {
                     name: '⏰ Time Until Results',
-                    value: `<t:${Math.floor(times.mondayResults.getTime() / 1000)}:R>`,
+                    value: `<t:${Math.floor(nextMonday5AMEST.getTime() / 1000)}:R>`,
                     inline: true
                 },
                 {
@@ -176,6 +188,10 @@ class WipeEmbedBuilder {
                     .setStyle(ButtonStyle.Secondary)
             );
 
+        console.log("🎯 Calculated times:");
+        console.log("📅 Next Friday Wipe:", times.fridayWipe.toISOString());
+        console.log("📅 Next Monday Selection:", nextMonday5AMEST.toISOString());
+        console.log("📅 Next Saturday Pre-Selection:", times.saturdaySelection.toISOString());
         return { embeds: [embed], components: [row] };
     }
 
@@ -185,6 +201,10 @@ class WipeEmbedBuilder {
 
         // Next Sunday 7PM EST (for next selection) - keeping original logic for this
         const now = new Date();
+        console.log("🕐 DEBUG: Current time checks:");
+        console.log("📅 Now (UTC):", now.toISOString());
+        console.log("📅 Now (EST):", now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        console.log("📅 Now (UK):", now.toLocaleString("en-GB", {timeZone: "Europe/London"}));
         const nextSunday = new Date();
         let daysUntilSunday = (7 - now.getDay()) % 7;
         if (daysUntilSunday === 0) daysUntilSunday = 7;
@@ -192,9 +212,15 @@ class WipeEmbedBuilder {
         nextSunday.setUTCHours(23, 0, 0, 0); // 7PM EST = 11PM UTC
 
         // Wednesday midnight EST (confirmation deadline)
-        const confirmDeadline = new Date(nextSunday);
-        confirmDeadline.setUTCDate(nextSunday.getUTCDate() + 3);
-        confirmDeadline.setUTCHours(5, 0, 0, 0);
+        // Wednesday midnight EST (confirmation deadline) - 5 days after Friday wipe
+        // Wednesday midnight EST (confirmation deadline) - 2 days BEFORE Friday wipe
+        const confirmDeadline = new Date(times.fridayWipe);
+        confirmDeadline.setUTCDate(times.fridayWipe.getUTCDate() - 2);
+        confirmDeadline.setUTCHours(5, 0, 0, 0); // Wednesday midnight EST = 5AM UTC
+        console.log("⏰ Confirm deadline calculation:");
+        console.log("📅 Friday wipe:", times.fridayWipe.toISOString());
+        console.log("📅 Confirm deadline (final):", confirmDeadline.toISOString());
+        console.log("🕐 Days until deadline:", Math.ceil((confirmDeadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
         // Get current cycle data
         const queries = new DatabaseQueries(db);
@@ -288,6 +314,10 @@ class WipeEmbedBuilder {
                     .setStyle(ButtonStyle.Secondary)
             );
 
+        console.log("🎯 Calculated times:");
+        console.log("📅 Next Friday Wipe:", times.fridayWipe.toISOString());
+        console.log("📅 Next Monday Selection:", nextMonday5AMEST.toISOString());
+        console.log("📅 Next Saturday Pre-Selection:", times.saturdaySelection.toISOString());
         return { embeds: [embed], components: [row1, row2] };
     }
 

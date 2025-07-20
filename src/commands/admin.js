@@ -76,209 +76,22 @@ module.exports = {
         try {
             switch (subcommand) {
                 case 'setchannel':
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
                     const channel = interaction.options.getChannel('channel');
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
                     
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
-                    
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
                     // Store channel ID in environment or database
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
                     process.env.PERSISTENT_CHANNEL_ID = channel.id;
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
                     
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
-                    
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
                     const embedBuilder = new WipeEmbedBuilder(db);
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
-                    const embedData = await embedBuilder.buildEmbed();
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
+                    const embedData = await WipeEmbedBuilder.buildPersistentEmbed(interaction.client, db);
                     const message = await channel.send(embedData);
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
                     
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
-                    
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
                     // Store message ID for future updates
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
                     process.env.PERSISTENT_MESSAGE_ID = message.id;
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
                     
                     await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
-                    
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
-                    await interaction.reply({
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
                         content: `✅ Persistent embed set in ${channel}`,
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
                         ephemeral: true
                     });
-                    break;
-                        ephemeral: true
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
-                    });
-
-                case 'setadminboard':
-                    const boardChannel = interaction.options.getChannel('channel');
-                    
-                    await interaction.client.adminEmbed.setAdminChannel(boardChannel.id);
-                    
-                    await interaction.reply({
-                        content: `✅ Admin status board set in ${boardChannel}`,
-                        ephemeral: true
-                    });
-                    break;
                     break;
 
                 case 'setadminboard':
@@ -293,38 +106,18 @@ module.exports = {
                     break;
 
                 case 'runselection':
-                    const algorithm = new SelectionAlgorithm(db);
-                    
-                    // Create new cycle first
-                    const startDate = new Date().toISOString().split('T')[0];
-                    const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                    const cycleId = await queries.createNewCycle(startDate, endDate);
-                    
-                    const result = await algorithm.selectPlayers(cycleId);
-                    
-                    if (result.requiresAdminSelection) {
-                        // Create tie-breaking interface
-                        await this.handleTieBreaking(interaction, result);
-                    } else {
-                        // Save selection and notify
-                        await queries.updateCycleSelection(cycleId, {
-                            selected: result.selected,
-                            backup: result.backup
+                    await interaction.deferReply({ ephemeral: true });
+
+                    try {
+                        await interaction.client.approvalManager.runSelectionForApproval();
+                        await interaction.editReply({
+                            content: '✅ Selection algorithm completed and sent for approval!'
                         });
-                        
-                        const embed = new EmbedBuilder()
-                            .setTitle('✅ Selection Complete')
-                            .setDescription('Players have been selected automatically.')
-                            .addFields(
-                                {
-                                    name: 'Selected Players',
-                                    value: result.selected.map((p, i) => `${i + 1}. <@${p.discord_id}>`).join('\n'),
-                                    inline: false
-                                }
-                            )
-                            .setColor(0x57F287);
-                        
-                        await interaction.reply({ embeds: [embed], ephemeral: true });
+                    } catch (error) {
+                        console.error('Error running selection:', error);
+                        await interaction.editReply({
+                            content: '❌ Error running selection algorithm.'
+                        });
                     }
                     break;
 

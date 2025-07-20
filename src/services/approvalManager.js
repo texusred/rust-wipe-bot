@@ -9,19 +9,19 @@ class ApprovalManager {
        this.algorithm = new SelectionAlgorithm(this.db);
    }
 
-   async getApprovalChannelId() {
+   async getAdminChannelId() {
        return new Promise((resolve, reject) => {
-           this.db.get('SELECT value FROM bot_config WHERE key = ?', ['APPROVAL_CHANNEL_ID'], (err, row) => {
+           this.db.get('SELECT value FROM bot_config WHERE key = ?', ['ADMIN_CHANNEL_ID'], (err, row) => {
                if (err) reject(err);
                else resolve(row ? row.value : null);
            });
        });
    }
 
-   async setApprovalChannelId(channelId) {
+   async setAdminChannelId(channelId) {
        return new Promise((resolve, reject) => {
            this.db.run('INSERT OR REPLACE INTO bot_config (key, value, updated_at) VALUES (?, ?, ?)', 
-               ['APPROVAL_CHANNEL_ID', channelId, new Date().toISOString()], 
+               ['ADMIN_CHANNEL_ID', channelId, new Date().toISOString()], 
                function(err) {
                    if (err) reject(err);
                    else resolve();
@@ -53,7 +53,7 @@ class ApprovalManager {
    }
 
    async sendApprovalRequest(selectionData) {
-       const channelId = await this.getApprovalChannelId();
+       const channelId = await this.getAdminChannelId();
        if (!channelId) {
            console.error('❌ No approval channel set');
            return;
@@ -69,7 +69,22 @@ class ApprovalManager {
            const embed = await this.buildApprovalEmbed(selectionData);
            const buttons = this.buildApprovalButtons();
 
-           const message = await channel.send({ embeds: [embed], components: [buttons] });
+            let components = [buttons];
+            if (selectionData.ties && selectionData.ties.length > 0) {
+                // Add tie-breaking row if ties exist
+                const tieRow = new ActionRowBuilder();
+                const firstTie = selectionData.ties[0];
+                firstTie.players.slice(0, 5).forEach(player => {
+                    tieRow.addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`resolve_tie_${player.discord_id}`)
+                            .setLabel(`Choose ${player.username}`)
+                            .setStyle(ButtonStyle.Secondary)
+                    );
+                });
+                components.push(tieRow);
+            }
+            const message = await channel.send({ embeds: [embed], components });
            await this.setApprovalMessageId(message.id);
 
            console.log(`📤 Approval request sent to ${channel.name}`);
@@ -136,6 +151,18 @@ class ApprovalManager {
            });
            
            embed.setColor(0xE67E22); // Orange for ties requiring attention
+            
+            // Create tie-breaking buttons
+            const tieRow = new ActionRowBuilder();
+            const firstTie = selectionData.ties[0];
+            firstTie.players.slice(0, 5).forEach(player => {
+                tieRow.addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`resolve_tie_${player.discord_id}`)
+                        .setLabel(`Choose ${player.username}`)
+                        .setStyle(ButtonStyle.Secondary)
+                );
+            });
        } else {
            embed.setColor(0xF39C12); // Standard orange for normal approval
        }
@@ -186,6 +213,12 @@ class ApprovalManager {
                case 'regenerate_selection':
                    await this.regenerateSelection(interaction);
                    break;
+            // Handle tie resolution
+            if (customId.startsWith('resolve_tie_')) {
+                await this.resolveTie(interaction, customId.replace('resolve_tie_', ''));
+                return;
+            }
+
                case 'manual_edit_selection':
                    await this.showManualEditModal(interaction);
                    break;
@@ -198,6 +231,64 @@ class ApprovalManager {
            });
        }
    }
+
+   async resolveTie(interaction, selectedPlayerId) {
+       await interaction.deferReply({ ephemeral: true });
+
+       try {
+           const pendingSelection = await this.algorithm.getPendingSelection();
+           if (!pendingSelection || !pendingSelection.ties) {
+               return await interaction.editReply({ content: '❌ No pending ties to resolve.' });
+           }
+
+           // Find the tie and resolve it
+           const firstTie = pendingSelection.ties[0];
+           const selectedPlayer = firstTie.players.find(p => p.discord_id === selectedPlayerId);
+           
+           if (!selectedPlayer) {
+               return await interaction.editReply({ content: '❌ Selected player not found in tie.' });
+           }
+
+           // Replace the tied slot with selected player
+           const slotIndex = parseInt(firstTie.position.replace('slot ', '')) - 1;
+           pendingSelection.selected[slotIndex] = {
+               discord_id: selectedPlayer.discord_id,
+               username: selectedPlayer.username,
+               status: 'pending',
+               priorityScore: selectedPlayer.priorityScore,
+               scoreBreakdown: selectedPlayer.scoreBreakdown
+           };
+
+           // Move unselected tied players to backup
+           const unselectedTiedPlayers = firstTie.players.filter(p => p.discord_id !== selectedPlayerId);
+           pendingSelection.backup.unshift(...unselectedTiedPlayers.map(p => ({
+               ...p,
+               status: 'backup'
+           })));
+
+           // Remove the resolved tie
+           pendingSelection.ties.shift();
+
+           // Update pending selection
+           await this.algorithm.storePendingSelection(pendingSelection);
+
+           // Update the approval message
+           const newEmbed = await this.buildApprovalEmbed(pendingSelection);
+           const newButtons = this.buildApprovalButtons();
+           await interaction.message.edit({ embeds: [newEmbed], components: [newButtons] });
+
+           await interaction.editReply({
+               content: `✅ Tie resolved! Selected ${selectedPlayer.username} for ${firstTie.position}.`
+           });
+
+           console.log(`🎯 Tie resolved by ${interaction.user.username}: Selected ${selectedPlayer.username}`);
+
+       } catch (error) {
+           console.error('Error resolving tie:', error);
+           await interaction.editReply({ content: '❌ Error resolving tie. Please try again.' });
+       }
+   }
+
 
    async showManualEditModal(interaction) {
        try {

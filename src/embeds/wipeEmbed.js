@@ -23,46 +23,32 @@ class WipeEmbedBuilder {
     // Helper function to get specific event times - FIXED TIMEZONE
     static getEventTimes() {
         const now = new Date();
-        console.log("🕐 DEBUG: Current time checks:");
-        console.log("📅 Now (UTC):", now.toISOString());
-        console.log("📅 Now (EST):", now.toLocaleString("en-US", {timeZone: "America/New_York"}));
-        console.log("📅 Now (UK):", now.toLocaleString("en-GB", {timeZone: "Europe/London"}));
         
-        // Calculate next Monday 5AM EST (10AM UK time)
+        // Calculate next Monday 5AM EST (10AM UTC)
         const nextMonday5AMEST = new Date(now);
         let daysUntilMonday = (1 - now.getUTCDay() + 7) % 7;
-        if (daysUntilMonday === 0 && now.getUTCHours() >= 10) { // 5AM EST = 10AM UTC
-            daysUntilMonday = 7; // If it's already Monday after 10AM UTC, next Monday
+        if (daysUntilMonday === 0 && now.getUTCHours() >= 10) {
+            daysUntilMonday = 7;
         }
         nextMonday5AMEST.setUTCDate(now.getUTCDate() + daysUntilMonday);
-        nextMonday5AMEST.setUTCHours(10, 0, 0, 0); // 5AM EST = 10AM UTC
+        nextMonday5AMEST.setUTCHours(10, 0, 0, 0);
         
         // Calculate next Friday 7PM EST (12AM UTC Saturday)
         const nextFriday7PMEST = new Date(now);
         let daysUntilFriday = (5 - now.getUTCDay() + 7) % 7;
-        if (daysUntilFriday === 0 && now.getUTCHours() >= 0) { // 7PM EST Friday = 12AM UTC Saturday
-            daysUntilFriday = 7; // If it's already Saturday, next Friday
+        if (daysUntilFriday === 0 && now.getUTCHours() >= 0) {
+            daysUntilFriday = 7;
         }
-        times.fridayWipe.setUTCDate(now.getUTCDate() + daysUntilFriday);
-        times.fridayWipe.setUTCHours(0, 0, 0, 0); // 7PM EST Friday = 12AM UTC Saturday
+        nextFriday7PMEST.setUTCDate(now.getUTCDate() + daysUntilFriday);
+        nextFriday7PMEST.setUTCHours(0, 0, 0, 0);
         
         // Calculate next Saturday 12PM EST (5PM UTC)
         const nextSaturday12PMEST = new Date(now);
-        let daysUntilSaturday = (6 - now.getUTCDay() + 7) % 7;
-        if (daysUntilSaturday === 0 && now.getUTCHours() >= 17) { // 12PM EST = 5PM UTC
-            daysUntilSaturday = 7; // If it's already Saturday after 5PM UTC, next Saturday
-        }
-        times.saturdaySelection.setUTCDate(now.getUTCDate() + daysUntilSaturday);
-        times.saturdaySelection.setUTCHours(17, 0, 0, 0); // 12PM EST = 5PM UTC
-        
-        console.log("🎯 Calculated times:");
-        console.log("📅 Next Friday Wipe:", times.fridayWipe.toISOString());
-        console.log("📅 Next Monday Selection:", nextMonday5AMEST.toISOString());
-        console.log("📅 Next Saturday Pre-Selection:", times.saturdaySelection.toISOString());
+        nextSaturday12PMEST.setUTCHours(17, 0, 0, 0);
         return {
             mondayResults: nextMonday5AMEST,
-            fridayWipe: times.fridayWipe,
-            saturdaySelection: times.saturdaySelection
+            fridayWipe: nextFriday7PMEST,
+            saturdaySelection: nextSaturday12PMEST
         };
     }
 
@@ -70,7 +56,7 @@ class WipeEmbedBuilder {
     static async buildWipeInProgressEmbed(client, db, stateManager) {
         const queries = new DatabaseQueries(db);
         const currentCycle = await queries.getCurrentCycle();
-        const times = this.getEventTimes();
+        const times = WipeEmbedBuilder.getEventTimes();
         
         let currentTeam = [];
         if (currentCycle && currentCycle.selected_players) {
@@ -138,7 +124,7 @@ class WipeEmbedBuilder {
 
     // State 2: Pre-Selection (Saturday 12PM → Monday 5AM EST)
     static async buildPreSelectionEmbed(client, db, stateManager) {
-        const times = this.getEventTimes();
+        const times = WipeEmbedBuilder.getEventTimes();
 
         const embed = new EmbedBuilder()
             .setTitle('🎯 SELECTION IN PROGRESS')
@@ -197,7 +183,7 @@ class WipeEmbedBuilder {
 
     // State 3: Selection Results (Monday 5AM → Friday 7PM EST) - Current functionality
     static async buildSelectionResultsEmbed(client, db, stateManager) {
-        const times = this.getEventTimes();
+        const times = WipeEmbedBuilder.getEventTimes();
 
         // Next Sunday 7PM EST (for next selection) - keeping original logic for this
         const now = new Date();
@@ -316,7 +302,7 @@ class WipeEmbedBuilder {
 
         console.log("🎯 Calculated times:");
         console.log("📅 Next Friday Wipe:", times.fridayWipe.toISOString());
-        console.log("📅 Next Monday Selection:", nextMonday5AMEST.toISOString());
+        console.log("📅 Next Monday Selection:", times.mondayResults.toISOString());
         console.log("📅 Next Saturday Pre-Selection:", times.saturdaySelection.toISOString());
         return { embeds: [embed], components: [row1, row2] };
     }

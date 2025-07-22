@@ -70,20 +70,26 @@ module.exports = {
                 case 'setchannel':
                     const channel = interaction.options.getChannel('channel');
                     
-                    // Store channel ID in environment or database
-                    process.env.PERSISTENT_CHANNEL_ID = channel.id;
+                    if (!interaction.client.persistentEmbed) {
+                        return await interaction.reply({
+                            content: '❌ Persistent embed manager not initialized!',
+                            ephemeral: true
+                        });
+                    }
                     
-                    const embedBuilder = new WipeEmbedBuilder(db);
-                    const embedData = await WipeEmbedBuilder.buildPersistentEmbed(interaction.client, db);
-                    const message = await channel.send(embedData);
+                    await interaction.deferReply({ ephemeral: true });
                     
-                    // Store message ID for future updates
-                    process.env.PERSISTENT_MESSAGE_ID = message.id;
-                    
-                    await interaction.reply({
-                        content: `✅ Persistent embed set in ${channel}`,
-                        ephemeral: true
-                    });
+                    try {
+                        await interaction.client.persistentEmbed.setPersistentChannel(channel.id);
+                        
+                        await interaction.editReply({
+                            content: `✅ Persistent embed set in ${channel}. Auto-updates every 30 seconds.`,
+                            ephemeral: true
+                        });
+                    } catch (error) {
+                        console.error('Error setting persistent channel:', error);
+                        await interaction.editReply({ content: '❌ Error setting persistent channel!' });
+                    }
                     break;
 
                 case 'runselection':

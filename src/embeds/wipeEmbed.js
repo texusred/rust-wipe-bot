@@ -32,15 +32,17 @@ class WipeEmbedBuilder {
         }
         nextMonday5AMEST.setUTCDate(now.getUTCDate() + daysUntilMonday);
         nextMonday5AMEST.setUTCHours(10, 0, 0, 0);
-        
-        // Calculate next Friday 7PM EST (12AM UTC Saturday)
+        // Calculate next Friday 7PM UK time (auto-adjusts for BST/GMT)
         const nextFriday7PMEST = new Date(now);
         let daysUntilFriday = (5 - now.getUTCDay() + 7) % 7;
-        if (daysUntilFriday === 0 && now.getUTCHours() >= 0) {
+        if (daysUntilFriday === 0 && now.getUTCHours() >= 18) {
             daysUntilFriday = 7;
         }
         nextFriday7PMEST.setUTCDate(now.getUTCDate() + daysUntilFriday);
-        nextFriday7PMEST.setUTCHours(0, 0, 0, 0);
+        const month = nextFriday7PMEST.getUTCMonth(); // 0=Jan, 11=Dec
+        const isBST = month >= 2 && month <= 9; // March(2) to October(9)
+        const ukHour = isBST ? 18 : 19; // 6PM UTC in summer, 7PM UTC in winter
+        nextFriday7PMEST.setUTCHours(ukHour, 0, 0, 0);
         
         // Calculate next Saturday 12PM EST (5PM UTC)
         const nextSaturday12PMEST = new Date(now);
